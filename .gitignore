@@ -1,0 +1,26 @@
+# Virtual Environment
+venv/
+.venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Environment Variables (never commit real secrets)
+.env
+
+# Uploads & Reports
+uploads/
+reports/
+
+# PyCharm / VSCode
+.idea/
+.vscode/
+
+# Flask Instance (local sqlite fallback db)
+instance/
+*.db
+
+# OS Files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Upload - AI Adaptive Learning{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h3 class="mb-4">Upload Study Material</h3>
+        <form method="POST" action="{{ url_for('main.upload') }}" enctype="multipart/form-data" id="uploadForm">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Education Level</label>
+            <select name="education_level" class="form-select" required>
+              <option value="School">School</option>
+              <option value="College">College</option>
+              <option value="University">University</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Question Type</label>
+            <select name="question_type" class="form-select" required>
+              <option value="mcq">MCQ</option>
+              <option value="fill">Fill in the Blank</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Number of Questions</label>
+            <select name="question_count" class="form-select" required>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Paste Study Notes</label>
+            <textarea name="notes" class="form-control" rows="8" placeholder="Paste your notes here..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">OR Upload File(s) — PDF, DOCX, PPTX, TXT, or image (JPG/PNG)</label>
+            <input type="file" name="files" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png" multiple>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg w-100" id="generateBtn">
+            Generate Quiz
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" tabindex="-1" id="loadingModal" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center p-4">
+      <div class="spinner-border text-primary mx-auto mb-3" role="status"></div>
+      <p class="mb-0">Generating your adaptive quiz with AI... this may take a moment.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('uploadForm').addEventListener('submit', function () {
+    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    modal.show();
+    document.getElementById('generateBtn').disabled = true;
+  });
+</script>
+{% endblock %}

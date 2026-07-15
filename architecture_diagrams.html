@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Adaptive Learning System — Activity Diagrams</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js"></script>
+<style>
+  :root {
+    --ink: #1E2333; --slate: #5B6472; --indigo: #4F5FE0; --cloud: #F4F6FB;
+    --paper: #FFFFFF; --line: #E4E8F0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background: var(--cloud); color: var(--ink); margin: 0; padding: 0 0 60px;
+  }
+  header {
+    background: var(--ink); color: #fff; padding: 32px 24px; text-align: center;
+  }
+  header h1 { margin: 0 0 8px; font-size: 1.6rem; }
+  header p { margin: 0; color: #C7CCE8; font-size: 0.95rem; }
+  .container { max-width: 980px; margin: 0 auto; padding: 24px; }
+  nav.toc {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px 22px; margin-bottom: 28px;
+  }
+  nav.toc h3 { margin-top: 0; }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; }
+  nav.toc a { color: var(--indigo); text-decoration: none; font-size: 0.92rem; }
+  nav.toc a:hover { text-decoration: underline; }
+  section.card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+    padding: 24px 26px; margin-bottom: 28px;
+  }
+  section.card h2 {
+    margin-top: 0; font-size: 1.25rem; border-bottom: 2px solid var(--line);
+    padding-bottom: 10px;
+  }
+  .files-touched {
+    background: var(--cloud); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 14px; font-size: 0.85rem; color: var(--slate); margin-bottom: 16px;
+  }
+  .files-touched code {
+    background: #E7EAFB; color: var(--indigo); padding: 1px 6px; border-radius: 4px;
+    font-size: 0.82rem;
+  }
+  .mermaid { text-align: center; }
+  .note {
+    background: #FBE7E6; border-left: 4px solid #E0554F; padding: 10px 14px;
+    border-radius: 6px; font-size: 0.88rem; margin-top: 14px;
+  }
+  .frontend-box {
+    background: #E4F6EE; border-left: 4px solid #1F9D74; padding: 14px 18px;
+    border-radius: 6px; font-size: 0.9rem; margin-top: 16px;
+  }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 0.88rem; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; }
+  th { background: var(--cloud); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AI Adaptive Learning System — Activity Diagrams</h1>
+  <p>Function-call flow for every feature, backend + frontend, in the order things actually execute</p>
+</header>
+
+<div class="container">
+
+<nav class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#upload">Upload &amp; Question Generation</a></li>
+    <li><a href="#quizload">Quiz Page Load</a></li>
+    <li><a href="#submit">Answer Submission (adaptive step)</a></li>
+    <li><a href="#next">Next Question / Finish Quiz</a></li>
+    <li><a href="#weak">Practice Weak Areas</a></li>
+    <li><a href="#retake">Retake Quiz</a></li>
+    <li><a href="#questionnaire">Questionnaire Submission</a></li>
+    <li><a href="#pdf">PDF Report Download</a></li>
+    <li><a href="#frontend">Frontend: which component is on screen, and why</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<section class="card" id="upload">
+  <h2>1. Upload &amp; Question Generation</h2>
+  <div class="files-touched">
+    <code>templates/upload.html</code> → <code>routes/main.py:upload()</code> → <code>services/file_service.py</code> → <code>services/ai_service.py</code> → <code>services/adaptive_service.py</code>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A[User fills upload form:<br/>education level, question type,<br/>count, notes/files] --> B[POST /upload]
+    B --> C{Files attached?}
+    C -->|Yes| D["file_service.allowed_file()<br/>checks extension"]
+    D -->|invalid ext| E[flash warning, skip file]
+    D -->|valid ext| F["file_service.extract_text(path)"]
+    F --> G{Which extractor?}
+    G -->|.pdf| G1[extract_pdf via PyMuPDF]
+    G -->|.docx| G2[extract_docx via python-docx]
+    G -->|.pptx| G3[extract_ppt via python-pptx]
+    G -->|.txt| G4[extract_txt]
+    G -->|.jpg/.png| G5[extract_image_text<br/>is_blurry check + pytesseract OCR]
+    G1 & G2 & G3 & G4 & G5 --> H[merged_text += extracted text]
+    C -->|No, notes only| H
+    H --> I{merged_text length >= 20?}
+    I -->|No| J[flash error, redirect back to /upload]
+    I -->|Yes| K["db.session.add(LearningSession)<br/>db.session.commit()"]
+    K --> L["AIService() init<br/>reads GROQ_API_KEY from config"]
+    L --> M["AIService.generate_questions()<br/>loops easy/medium/hard buckets"]
+    M --> N["_build_prompt() per bucket"]
+    N --> O["Groq chat.completions.create()"]
+    O --> P["_parse_json() strips markdown,<br/>extracts JSON array"]
+    P --> Q["_validate_questions()<br/>dedupe, enforce schema"]
+    Q --> R{Valid questions found?}
+    R -->|No, 3 retries failed| S[AIServiceError raised,<br/>flash error, delete session, redirect]
+    R -->|Yes| T["_save_questions()<br/>Question rows created,<br/>elo_rating seeded from SEED_ELO"]
+    T --> U["AdaptiveService.create_state()<br/>new QuizState row,<br/>current_difficulty='medium'"]
+    U --> V["redirect to /quiz/&lt;session_id&gt;"]
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="quizload">
+  <h2>2. Quiz Page Load (first question)</h2>
+  <div class="files-touched">
+    <code>routes/main.py:quiz()</code> → <code>services/adaptive_service.py</code> → <code>templates/quiz.html</code> → <code>static/js/quiz.js</code>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A[GET /quiz/&lt;session_id&gt;] --> B["LearningSession.query.get_or_404()"]
+    B --> C["AdaptiveService.create_state()<br/>returns existing QuizState<br/>(idempotent — no duplicate created)"]
+    C --> D["AdaptiveService.pick_next_question()"]
+    D --> E{Any unused question<br/>matching current_difficulty?}
+    E -->|Yes| F[Return exact match]
+    E -->|No exact match| G[Return closest difficulty<br/>in same topic, or any candidate]
+    E -->|No candidates left| H["state.completed = True<br/>render quiz.html with<br/>initial_question = None"]
+    F --> I["state.current_topic = q.topic<br/>db.session.commit()"]
+    G --> I
+    I --> J["render_template('quiz.html',<br/>initial_question=question_json(q),<br/>question_number, total_questions, state)"]
+    J --> K["Browser loads quiz.html<br/>window.INITIAL_QUESTION set inline"]
+    K --> L["quiz.js IIFE runs on page load"]
+    L --> M{window.INITIAL_QUESTION<br/>is truthy?}
+    M -->|Yes| N["renderQuestion(currentQuestion)<br/>builds option buttons in #optionsContainer"]
+    M -->|No| O["POST /next as fallback<br/>(edge case: no questions at all)"]
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="submit">
+  <h2>3. Answer Submission — the adaptive step</h2>
+  <div class="files-touched">
+    <code>static/js/quiz.js:submitAnswer()</code> → <code>routes/main.py:submit()</code> → <code>services/adaptive_service.py:apply_answer()</code>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A[User clicks an option button<br/>or Submit for fill-in-the-blank] --> B["submitAnswer(questionId, selectedAnswer)"]
+    B --> C{answered flag<br/>already true?}
+    C -->|Yes| Z[Ignore — prevents double submit]
+    C -->|No| D["fetch POST /submit/&lt;session_id&gt;<br/>body: {question_id, selected_answer}"]
+    D --> E["routes.main.submit()"]
+    E --> F["Question.query.get_or_404()"]
+    F --> G["is_correct = selected_answer == question.answer<br/>(case-insensitive)"]
+    G --> H["QuizAttempt row created<br/>(session_id, question_id, is_correct)"]
+    H --> I["AdaptiveService.mark_used(state, question.id)<br/>appends to used_questions list"]
+    I --> J["AdaptiveService.apply_answer(state, question, is_correct)"]
+    J --> K{is_correct?}
+    K -->|True| L["correct_answers += 1<br/>current_difficulty = DIFFICULTY_UP[current]<br/>e.g. medium → hard"]
+    K -->|False| M["wrong_answers += 1<br/>record_weak_topic() increments weak_topics dict<br/>current_difficulty = DIFFICULTY_DOWN[current]"]
+    L --> N["_update_elo() — internal only:<br/>updates state.student_elo,<br/>state.topic_elo[topic],<br/>question.elo_rating<br/>(NOT shown in UI)"]
+    M --> N
+    N --> O["db.session.commit()"]
+    O --> P["JSON response: correct, correct_answer,<br/>explanation, finished"]
+    P --> Q["quiz.js: disable all option buttons,<br/>color correct green / wrong red,<br/>show explanation box,<br/>reveal 'Next Question' button"]
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="next">
+  <h2>4. Next Question / Finish Quiz</h2>
+  <div class="files-touched">
+    <code>static/js/quiz.js</code> (nextBtn click) → <code>routes/main.py:next_question()</code> → <code>services/adaptive_service.py:pick_next_question()</code>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A["User clicks 'Next Question'"] --> B["fetch POST /next/&lt;session_id&gt;"]
+    B --> C["routes.main.next_question()"]
+    C --> D{state.completed OR<br/>current_question &gt;= total_questions?}
+    D -->|Yes| E["state.completed = True<br/>results_payload(): accuracy, correct,<br/>wrong, weak_topics"]
+    D -->|No| F["state.current_question += 1<br/>(ONLY place this counter changes)"]
+    F --> G["AdaptiveService.pick_next_question()<br/>same logic as page-load step"]
+    G --> H{Question found?}
+    H -->|No| E
+    H -->|Yes| I["state.current_topic = q.topic<br/>db.session.commit()"]
+    I --> J["JSON: finished=false, question,<br/>question_number, total_questions, difficulty"]
+    E --> K["JSON: finished=true, results"]
+    J --> L["quiz.js: renderQuestion(data.question)<br/>updates counter + difficulty badge"]
+    K --> M["quiz.js: showResults(data.results)<br/>hides #quizCard,<br/>shows #resultsCard + #questionnaireCard"]
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="weak">
+  <h2>5. Practice Weak Areas</h2>
+  <div class="files-touched">
+    <code>static/js/quiz.js</code> (weakBtn click) → <code>routes/main.py:weak_practice()</code> → <code>services/ai_service.py</code>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A["User clicks 'Practice Weak Areas'<br/>on results screen"] --> B["fetch POST /weak/&lt;session_id&gt;"]
+    B --> C["routes.main.weak_practice()"]
+    C --> D["weak_topics = list(state.weak_topics.keys())"]
+    D --> E{weak_topics empty?}
+    E -->|Yes| F["return 400 error JSON<br/>'No weak topics found yet'"]
+    E -->|No| G["AIService.generate_questions(<br/>topics_filter=weak_topics)"]
+    G --> H["same generate/parse/validate<br/>pipeline as initial upload,<br/>but prompt restricts to weak topics only"]
+    H --> I["_save_questions(is_weak_practice=True)<br/>new Question rows flagged"]
+    I --> J["AdaptiveService.reset_state(<br/>mode='weak_practice',<br/>total_questions=len(generated))"]
+    J --> K["JSON: redirect URL to /quiz/&lt;session_id&gt;"]
+    K --> L["quiz.js: window.location.href = redirect"]
+    L --> M["Full page load →<br/>quiz() route runs again,<br/>pick_next_question() now filters<br/>WHERE is_weak_practice=True"]
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="retake">
+  <h2>6. Retake Quiz</h2>
+  <div class="files-touched">
+    <code>static/js/quiz.js</code> (retakeBtn click) → <code>routes/main.py:retake()</code> → <code>services/adaptive_service.py:reset_state()</code>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A["User clicks 'Retake Quiz'"] --> B["fetch POST /retake/&lt;session_id&gt;"]
+    B --> C["routes.main.retake()"]
+    C --> D["AdaptiveService.reset_state(<br/>mode='normal',<br/>total_questions=session.requested_questions)"]
+    D --> E["current_question=1, current_difficulty='medium',<br/>correct/wrong=0, used_questions=[],<br/>weak_topics={}, student_elo=1300, topic_elo={}"]
+    E --> F["JSON: redirect to /quiz/&lt;session_id&gt;"]
+    F --> G["quiz.js: window.location.href = redirect"]
+    G --> H["Full page reload → quiz() route,<br/>same Question rows reused<br/>(nothing regenerated by AI)"]
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="questionnaire">
+  <h2>7. Questionnaire Submission</h2>
+  <div class="files-touched">
+    <code>templates/quiz.html</code> (Likert table) → <code>static/js/quiz.js</code> → <code>routes/main.py:questionnaire()</code>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A["User selects one radio button<br/>per row (q1..q8) + optional comments"] --> B["form submit event"]
+    B --> C["e.preventDefault()"]
+    C --> D["new FormData(form)<br/>Object.fromEntries() →<br/>{q1:'Agree', q2:'Strongly Agree', ...}"]
+    D --> E["fetch POST /questionnaire/&lt;session_id&gt;"]
+    E --> F["routes.main.questionnaire()"]
+    F --> G{Existing Questionnaire<br/>row for this session?}
+    G -->|Yes| H["delete old row first<br/>(one questionnaire per session)"]
+    G -->|No| I["Questionnaire(<br/>q1_understanding, ..., q8_preference,<br/>comments) created"]
+    H --> I
+    I --> J["db.session.commit()<br/>→ row visible in Supabase immediately"]
+    J --> K["JSON: {status:'ok', message:'Thank you...'}"]
+    K --> L["quiz.js: hide form,<br/>show #thankYouBox"]
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="pdf">
+  <h2>8. PDF Report Download</h2>
+  <div class="files-touched">
+    <code>templates/quiz.html</code> (download link) → <code>routes/main.py:download_report()</code> → <code>services/report_service.py</code>
+  </div>
+  <div class="mermaid">
+flowchart TD
+    A["User clicks 'Download PDF Report'<br/>(plain &lt;a href&gt;, not AJAX)"] --> B["GET /download/&lt;session_id&gt;"]
+    B --> C["routes.main.download_report()"]
+    C --> D["fetch LearningSession, QuizState,<br/>all QuizAttempt rows ordered by time"]
+    D --> E["services.report_service.build_pdf_report()"]
+    E --> F["Section: Student Statistics<br/>(accuracy, correct, wrong)"]
+    F --> G["Section: Topic Mastery<br/>for each topic in state.topic_elo:<br/>AdaptiveService.elo_to_mastery_percent()<br/>AdaptiveService.elo_to_mastery_label()"]
+    G --> H["Section: Weak Topics<br/>(from state.weak_topics dict)"]
+    H --> I{Any weak topics?}
+    I -->|Yes| J["Section: Learning Summaries<br/>AIService.generate_summary(topic)<br/>— one Groq call per weak topic"]
+    I -->|No| K[Skip summaries section]
+    J --> L["Section: Question History<br/>loop over all QuizAttempt rows"]
+    K --> L
+    L --> M["Section: Recommendations<br/>(static text based on weak_topics)"]
+    M --> N["pdf.output(filepath)<br/>saved to uploads/reports/"]
+    N --> O["send_file() → browser downloads<br/>quiz_report_&lt;session_id&gt;.pdf"]
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="card" id="frontend">
+  <h2>9. Frontend: which component is mounted, and why</h2>
+  <p>There's no real "mounting" (no React/Vue) — <code>quiz.html</code> renders all three
+  cards into the DOM at once, and <code>quiz.js</code> just toggles Bootstrap's
+  <code>d-none</code> class to show/hide them. Only one is visible at a time.</p>
+
+  <table>
+    <tr><th>Element ID</th><th>Visible when</th><th>Who toggles it</th></tr>
+    <tr><td><code>#quizCard</code></td><td>Default state — always visible until quiz finishes</td><td>Never hidden until <code>showResults()</code> runs</td></tr>
+    <tr><td><code>#resultsCard</code></td><td>After the last question is answered and <code>/next</code> returns <code>finished:true</code></td><td><code>showResults()</code> removes its <code>d-none</code></td></tr>
+    <tr><td><code>#questionnaireCard</code></td><td>Same moment as resultsCard — shown together</td><td><code>showResults()</code> removes its <code>d-none</code> too</td></tr>
+    <tr><td><code>#feedbackBox</code></td><td>After an answer is submitted, inside quizCard</td><td><code>submitAnswer()</code>'s <code>.then()</code> callback</td></tr>
+    <tr><td><code>#nextBtn</code></td><td>Same moment as feedbackBox</td><td><code>submitAnswer()</code>'s <code>.then()</code> callback</td></tr>
+    <tr><td><code>#thankYouBox</code></td><td>After questionnaire POST succeeds</td><td>questionnaire form's submit handler</td></tr>
+  </table>
+
+  <div class="frontend-box">
+    <b>Practical debugging tip:</b> if something looks "stuck" (e.g. "Loading question..."
+    never goes away), open DevTools Console (F12). The whole <code>quiz.js</code> file is
+    one IIFE — if any line throws (e.g. <code>document.getElementById(...)</code> returns
+    <code>null</code> because an element was renamed/removed in <code>quiz.html</code> but
+    <code>quiz.js</code> still references the old ID), the script stops executing entirely,
+    and the final <code>renderQuestion(currentQuestion)</code> call at the bottom never runs.
+    That's why <code>quiz.html</code> and <code>quiz.js</code> must always be replaced
+    <i>together</i>, never one without the other.
+  </div>
+
+  <div class="note">
+    Global state lives in plain JS variables at the top of the IIFE
+    (<code>currentQuestion</code>, <code>questionNumber</code>, <code>totalQuestions</code>,
+    <code>difficulty</code>, <code>answered</code>) — there's no framework state management.
+    Every AJAX response reassigns these variables directly before calling
+    <code>renderQuestion()</code> again.
+  </div>
+</section>
+
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { curve: 'basis' } });
+</script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Quiz - AI Adaptive Learning{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-md-8">
+
+    <!-- QUIZ CARD -->
+    <div class="card shadow-sm" id="quizCard">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="badge bg-secondary" id="questionCounter">Question 1 of {{ total_questions }}</span>
+          <span class="badge bg-info text-dark" id="difficultyBadge">Difficulty: {{ state.current_difficulty }}</span>
+        </div>
+
+        <h4 id="questionText" class="mb-4">Loading question...</h4>
+
+        <div id="optionsContainer" class="d-grid gap-2"></div>
+
+        <div id="feedbackBox" class="mt-4 d-none">
+          <div id="feedbackAlert" class="alert" role="alert"></div>
+          <div id="explanationBox" class="p-3 bg-light border rounded"></div>
+        </div>
+
+        <div class="text-end mt-4">
+          <button class="btn btn-primary d-none" id="nextBtn">Next Question</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS CARD -->
+    <div class="card shadow-sm d-none" id="resultsCard">
+      <div class="card-body p-4 text-center">
+        <h3 class="mb-4">Quiz Completed</h3>
+        <div class="row mb-4">
+          <div class="col-4">
+            <h2 id="accuracyStat">0%</h2>
+            <p class="text-muted mb-0">Accuracy</p>
+          </div>
+          <div class="col-4">
+            <h2 class="text-success" id="correctStat">0</h2>
+            <p class="text-muted mb-0">Correct</p>
+          </div>
+          <div class="col-4">
+            <h2 class="text-danger" id="wrongStat">0</h2>
+            <p class="text-muted mb-0">Wrong</p>
+          </div>
+        </div>
+
+        <div class="text-start mb-4" id="weakTopicsSection">
+          <h5>Weak Topics</h5>
+          <ul id="weakTopicsList" class="list-group"></ul>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+          <button class="btn btn-outline-primary" id="retakeBtn">Retake Quiz</button>
+          <button class="btn btn-outline-warning" id="weakBtn">Practice Weak Areas</button>
+          <a class="btn btn-outline-success" id="downloadBtn" href="{{ url_for('main.download_report', session_id=session_id) }}">Download PDF Report</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUESTIONNAIRE CARD -->
+    <div class="card shadow-sm mt-4 d-none" id="questionnaireCard">
+      <div class="card-body p-4">
+        <h4 class="mb-1">AI Adaptive Learning Assistant Evaluation Questionnaire</h4>
+        <p class="text-muted mb-3">Instructions</p>
+
+        <div class="questionnaire-instructions">
+          <p>For each statement, please indicate your level of agreement by selecting one response.</p>
+        </div>
+
+        <form id="questionnaireForm">
+          <div class="table-responsive">
+            <table class="likert-table">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Statement</th>
+                  <th>Strongly Agree</th>
+                  <th>Agree</th>
+                  <th>Neutral</th>
+                  <th>Disagree</th>
+                  <th>Strongly Disagree</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">1. The AI Adaptive Learning Assistant improved my understanding of the study material.</th>
+                  <td><input class="likert-radio" type="radio" name="q1" value="Strongly Agree" required></td>
+                  <td><input class="likert-radio" type="radio" name="q1" value="Agree"></td>
+                  <td><input class="likert-radio" type="radio" name="q1" value="Neutral"></td>
+                  <td><input class="likert-radio" type="radio" name="q1" value="Disagree"></td>
+                  <td><input class="likert-radio" type="radio" name="q1" value="Strongly Disagree"></td>
+                </tr>
+                <tr>
+                  <th scope="row">2. The adaptive difficulty of the quiz matched my learning level and helped me learn more effectively.</th>
+                  <td><input class="likert-radio" type="radio" name="q2" value="Strongly Agree" required></td>
+                  <td><input class="likert-radio" type="radio" name="q2" value="Agree"></td>
+                  <td><input class="likert-radio" type="radio" name="q2" value="Neutral"></td>
+                  <td><input class="likert-radio" type="radio" name="q2" value="Disagree"></td>
+                  <td><input class="likert-radio" type="radio" name="q2" value="Strongly Disagree"></td>
+                </tr>
+                <tr>
+                  <th scope="row">3. The explanations and feedback provided after each question helped me identify and correct my mistakes.</th>
+                  <td><input class="likert-radio" type="radio" name="q3" value="Strongly Agree" required></td>
+                  <td><input class="likert-radio" type="radio" name="q3" value="Agree"></td>
+                  <td><input class="likert-radio" type="radio" name="q3" value="Neutral"></td>
+                  <td><input class="likert-radio" type="radio" name="q3" value="Disagree"></td>
+                  <td><input class="likert-radio" type="radio" name="q3" value="Strongly Disagree"></td>
+                </tr>
+                <tr>
+                  <th scope="row">4. The weak-topic summaries improved my understanding of concepts I found difficult.</th>
+                  <td><input class="likert-radio" type="radio" name="q4" value="Strongly Agree" required></td>
+                  <td><input class="likert-radio" type="radio" name="q4" value="Agree"></td>
+                  <td><input class="likert-radio" type="radio" name="q4" value="Neutral"></td>
+                  <td><input class="likert-radio" type="radio" name="q4" value="Disagree"></td>
+                  <td><input class="likert-radio" type="radio" name="q4" value="Strongly Disagree"></td>
+                </tr>
+                <tr>
+                  <th scope="row">5. The AI-generated questions and answers felt accurate and trustworthy.</th>
+                  <td><input class="likert-radio" type="radio" name="q5" value="Strongly Agree" required></td>
+                  <td><input class="likert-radio" type="radio" name="q5" value="Agree"></td>
+                  <td><input class="likert-radio" type="radio" name="q5" value="Neutral"></td>
+                  <td><input class="likert-radio" type="radio" name="q5" value="Disagree"></td>
+                  <td><input class="likert-radio" type="radio" name="q5" value="Strongly Disagree"></td>
+                </tr>
+                <tr>
+                  <th scope="row">6. Using the AI Adaptive Learning Assistant kept me engaged and motivated to keep studying.</th>
+                  <td><input class="likert-radio" type="radio" name="q6" value="Strongly Agree" required></td>
+                  <td><input class="likert-radio" type="radio" name="q6" value="Agree"></td>
+                  <td><input class="likert-radio" type="radio" name="q6" value="Neutral"></td>
+                  <td><input class="likert-radio" type="radio" name="q6" value="Disagree"></td>
+                  <td><input class="likert-radio" type="radio" name="q6" value="Strongly Disagree"></td>
+                </tr>
+                <tr>
+                  <th scope="row">7. The AI Adaptive Learning Assistant was easy to use and navigate.</th>
+                  <td><input class="likert-radio" type="radio" name="q7" value="Strongly Agree" required></td>
+                  <td><input class="likert-radio" type="radio" name="q7" value="Agree"></td>
+                  <td><input class="likert-radio" type="radio" name="q7" value="Neutral"></td>
+                  <td><input class="likert-radio" type="radio" name="q7" value="Disagree"></td>
+                  <td><input class="likert-radio" type="radio" name="q7" value="Strongly Disagree"></td>
+                </tr>
+                <tr>
+                  <th scope="row">8. Overall, I would prefer using this AI Adaptive Learning Assistant over traditional self-study methods.</th>
+                  <td><input class="likert-radio" type="radio" name="q8" value="Strongly Agree" required></td>
+                  <td><input class="likert-radio" type="radio" name="q8" value="Agree"></td>
+                  <td><input class="likert-radio" type="radio" name="q8" value="Neutral"></td>
+                  <td><input class="likert-radio" type="radio" name="q8" value="Disagree"></td>
+                  <td><input class="likert-radio" type="radio" name="q8" value="Strongly Disagree"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mb-3 mt-4">
+            <label class="form-label fw-semibold">Additional Comments (optional)</label>
+            <textarea class="form-control" name="comments" rows="3" placeholder="Anything else you'd like to share..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Submit Feedback</button>
+        </form>
+        <div class="alert alert-success mt-3 d-none" id="thankYouBox">Thank you for your feedback!</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.SESSION_ID = "{{ session_id }}";
+  window.INITIAL_QUESTION = {{ initial_question | tojson if initial_question else 'null' }};
+  window.QUESTION_NUMBER = {{ question_number | default(1) }};
+  window.TOTAL_QUESTIONS = {{ total_questions | default(state.total_questions) }};
+  window.INITIAL_DIFFICULTY = "{{ state.current_difficulty }}";
+</script>
+<script src="{{ url_for('static', filename='js/quiz.js') }}?v=2"></script>
+{% endblock %}

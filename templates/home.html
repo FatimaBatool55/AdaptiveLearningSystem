@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Home - AI Adaptive Learning{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="display-5 fw-bold mb-3">AI Adaptive Learning &amp; Assessment System</h1>
+  <p class="lead text-muted mb-4">
+    Upload your study material and let AI generate a personalized, adaptive quiz that adjusts
+    to your skill level in real time.
+  </p>
+  <a href="{{ url_for('main.upload') }}" class="btn btn-primary btn-lg px-5">Start Learning</a>
+</div>
+
+<div class="row justify-content-center mt-4">
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body text-center">
+        <h5 class="card-title">Upload Notes</h5>
+        <p class="card-text">Paste text or upload a PDF of your study material.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body text-center">
+        <h5 class="card-title">Adaptive Quiz</h5>
+        <p class="card-text">Difficulty adjusts automatically based on your performance.</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      <div class="card-body text-center">
+        <h5 class="card-title">Detailed Report</h5>
+        <p class="card-text">Download a PDF report with weak topics and learning summaries.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

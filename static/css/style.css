@@ -1,0 +1,278 @@
+/* ============================================================
+   Color palette
+   ------------------------------------------------------------
+   Ink       #1E2333  primary text / headings
+   Slate     #5B6472  secondary text
+   Indigo    #4F5FE0  primary actions / accents
+   Indigo-D  #3C4ACC  primary hover
+   Mint      #1F9D74  success / correct
+   Mint-Bg   #E4F6EE  success background
+   Coral     #E0554F  error / wrong
+   Coral-Bg  #FBE7E6  error background
+   Amber     #D89A2E  warning / medium difficulty
+   Cloud     #F4F6FB  page background
+   Paper     #FFFFFF  card background
+   Line      #E4E8F0  borders
+   ============================================================ */
+
+:root {
+  --ink: #1E2333;
+  --slate: #5B6472;
+  --indigo: #4F5FE0;
+  --indigo-dark: #3C4ACC;
+  --mint: #1F9D74;
+  --mint-bg: #E4F6EE;
+  --coral: #E0554F;
+  --coral-bg: #FBE7E6;
+  --amber: #D89A2E;
+  --cloud: #F4F6FB;
+  --paper: #FFFFFF;
+  --line: #E4E8F0;
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--cloud);
+  color: var(--ink);
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* -------------------- Navbar -------------------- */
+.navbar {
+  background-color: var(--ink) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.navbar-brand {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: #FFFFFF !important;
+}
+
+/* -------------------- Cards -------------------- */
+.card {
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background-color: var(--paper);
+  box-shadow: 0 1px 2px rgba(30, 35, 51, 0.04);
+}
+
+.card-title {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.card-text {
+  color: var(--slate);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.lead {
+  color: var(--slate) !important;
+}
+
+.text-muted {
+  color: var(--slate) !important;
+}
+
+/* -------------------- Buttons -------------------- */
+.btn-primary {
+  background-color: var(--indigo);
+  border-color: var(--indigo);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--indigo-dark);
+  border-color: var(--indigo-dark);
+}
+
+.btn-outline-primary {
+  color: var(--indigo);
+  border-color: var(--indigo);
+  border-radius: var(--radius-sm);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--indigo);
+  border-color: var(--indigo);
+}
+
+.btn-outline-success {
+  color: var(--mint);
+  border-color: var(--mint);
+  border-radius: var(--radius-sm);
+}
+
+.btn-outline-success:hover {
+  background-color: var(--mint);
+  border-color: var(--mint);
+}
+
+.btn-outline-warning {
+  color: var(--amber);
+  border-color: var(--amber);
+  border-radius: var(--radius-sm);
+}
+
+.btn-outline-warning:hover {
+  background-color: var(--amber);
+  border-color: var(--amber);
+  color: #FFFFFF;
+}
+
+/* -------------------- Quiz question options -------------------- */
+.option-btn {
+  text-align: left;
+  padding: 14px 18px;
+  font-size: 1.02rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.option-btn:hover:not(:disabled) {
+  border-color: var(--indigo);
+  background: #F1F2FE;
+}
+
+.option-btn:disabled {
+  opacity: 0.9;
+}
+
+.option-btn.correct-answer {
+  border-color: var(--mint);
+  background-color: var(--mint-bg);
+  color: #0E5C40;
+  font-weight: 600;
+}
+
+.option-btn.wrong-answer {
+  border-color: var(--coral);
+  background-color: var(--coral-bg);
+  color: #8A2E2A;
+  font-weight: 600;
+}
+
+/* -------------------- Feedback -------------------- */
+#feedbackAlert.alert-success {
+  background-color: var(--mint-bg);
+  color: #0E5C40;
+  border: 1px solid #BEE7D5;
+}
+
+#feedbackAlert.alert-danger {
+  background-color: var(--coral-bg);
+  color: #8A2E2A;
+  border: 1px solid #F3C7C4;
+}
+
+#explanationBox {
+  background-color: var(--cloud);
+  border: 1px solid var(--line) !important;
+  color: var(--slate);
+}
+
+.badge.bg-secondary {
+  background-color: var(--slate) !important;
+}
+
+.badge.bg-info {
+  background-color: #E7EAFB !important;
+  color: var(--indigo) !important;
+}
+
+/* -------------------- Weak topics list -------------------- */
+.list-group-item {
+  display: flex;
+  justify-content: space-between;
+  border-color: var(--line);
+}
+
+.badge.bg-danger {
+  background-color: var(--coral) !important;
+}
+
+/* ============================================================
+   Questionnaire — Likert scale table
+   ============================================================ */
+.questionnaire-instructions {
+  background-color: var(--cloud);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.questionnaire-instructions p {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.likert-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.likert-table th,
+.likert-table td {
+  border: 1px solid var(--line);
+  padding: 14px 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.likert-table thead th {
+  background-color: var(--ink);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.likert-table tbody th {
+  text-align: left;
+  background-color: var(--cloud);
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 0.95rem;
+  max-width: 320px;
+}
+
+.likert-table tbody tr:nth-child(even) td,
+.likert-table tbody tr:nth-child(even) th {
+  background-color: #FAFBFD;
+}
+
+.likert-radio {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--indigo);
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .likert-table {
+    font-size: 0.82rem;
+  }
+  .likert-table th, .likert-table td {
+    padding: 10px 6px;
+  }
+}
