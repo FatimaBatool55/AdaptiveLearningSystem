@@ -1,4 +1,16 @@
 import os
+import sys
+
+# Vercel's Python runtime loads this file via importlib.util.spec_from_file_location
+# directly (see /var/task/_vendor/vercel_runtime/resolver.py), which does NOT add
+# this file's own directory to sys.path the way a normal `python app.py` invocation
+# does. Without this, sibling packages (models/, routes/, services/) fail to import
+# on Vercel with "ModuleNotFoundError: No module named 'models'" even though they
+# sit right next to this file in the deployed bundle. This line is a harmless no-op
+# when running locally or on any other host (the directory is usually already on
+# sys.path there), so it's safe to always include.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask
 from sqlalchemy import inspect, text
 from config import Config
@@ -50,6 +62,7 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    if not os.environ.get("VERCEL"):
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
     os.makedirs(os.path.join(os.path.dirname(__file__), "instance"), exist_ok=True)
 
