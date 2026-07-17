@@ -33,8 +33,21 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
-    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50 MB
+    # Vercel's filesystem is read-only everywhere except /tmp. Detect that
+    # environment (Vercel sets VERCEL=1) and write uploads/reports there
+    # instead of a local uploads/ folder, which would fail to write on Vercel.
+    IS_VERCEL = bool(os.environ.get("VERCEL"))
+    if IS_VERCEL:
+        UPLOAD_FOLDER = "/tmp/uploads"
+    else:
+        UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+
+    # Vercel Hobby/Pro serverless functions hard-reject any request body over
+    # ~4.5MB with a 413 PAYLOAD_TOO_LARGE *before our code ever runs* — no
+    # amount of Flask config can raise that ceiling there. Render has no such
+    # platform-level limit, so give it a much more generous default and only
+    # shrink it specifically when running on Vercel.
+    MAX_CONTENT_LENGTH = (4 if IS_VERCEL else 20) * 1024 * 1024  # 4 MB on Vercel, 20 MB elsewhere
 
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
     GROQ_MODEL = "llama-3.3-70b-versatile"

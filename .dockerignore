@@ -1,0 +1,14 @@
+.git
+.gitignore
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+instance/
+uploads/
+*.db
+.idea/
+.vscode/
+README.md
+architecture_diagrams.html
