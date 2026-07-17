@@ -1,5 +1,6 @@
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from groq import Groq
 from flask import current_app
 
@@ -28,54 +29,76 @@ class AIService:
         Generate a mixed set of easy/medium/hard questions and return them as
         plain dicts (NOT saved to DB here — the caller decides how to persist
         them, e.g. tagging weak-practice questions separately).
+
+        The three difficulty buckets are independent Groq API calls, so they
+        run concurrently (thread pool) instead of one after another — this
+        cuts total generation time roughly 3x since each call is
+        network-bound (waiting on Groq), not CPU-bound.
         """
-        all_questions = []
         per_bucket = max(1, requested_questions // 3)
         buckets = {
             "easy": per_bucket,
             "medium": per_bucket,
             "hard": requested_questions - (2 * per_bucket),
         }
+        buckets = {k: v for k, v in buckets.items() if v > 0}
 
-        for difficulty, count in buckets.items():
-            if count <= 0:
-                continue
-            prompt = self._build_prompt(
-                text=text,
-                education_level=education_level,
-                question_type=question_type,
-                total_questions=count,
-                difficulty=difficulty,
-                topics_filter=topics_filter,
-            )
+        all_questions = []
+        errors = []
 
-            last_error = None
-            for attempt in range(3):
+        with ThreadPoolExecutor(max_workers=len(buckets)) as executor:
+            futures = {
+                executor.submit(
+                    self._generate_bucket, text, education_level, question_type,
+                    count, difficulty, topics_filter
+                ): difficulty
+                for difficulty, count in buckets.items()
+            }
+            for future in as_completed(futures):
+                difficulty = futures[future]
                 try:
-                    response = self.client.chat.completions.create(
-                        model=self.model,
-                        messages=[{"role": "user", "content": prompt}],
-                        temperature=0.4,
-                    )
-                    response_text = response.choices[0].message.content
-                    parsed = self._parse_json(response_text)
-                    validated = self._validate_questions(parsed, question_type)
-                    if validated:
-                        all_questions.extend(validated)
-                        break
-                except Exception as e:  # noqa: BLE001 - we deliberately retry on any parse/API error
-                    last_error = e
-                    continue
-            else:
-                # Loop completed without a successful 'break' -> all 3 attempts failed
-                raise AIServiceError(
-                    f"AI could not generate {difficulty} questions after 3 attempts: {last_error}"
-                )
+                    all_questions.extend(future.result())
+                except AIServiceError as e:
+                    errors.append(str(e))
 
         if not all_questions:
-            raise AIServiceError("AI could not generate any questions from this material.")
+            detail = "; ".join(errors) if errors else "no questions were returned"
+            raise AIServiceError(f"AI could not generate any questions from this material ({detail}).")
 
         return all_questions
+
+    def _generate_bucket(self, text, education_level, question_type, count, difficulty, topics_filter):
+        """Generate one difficulty bucket, with up to 3 retries. Raises
+        AIServiceError if all attempts fail for this bucket."""
+        prompt = self._build_prompt(
+            text=text,
+            education_level=education_level,
+            question_type=question_type,
+            total_questions=count,
+            difficulty=difficulty,
+            topics_filter=topics_filter,
+        )
+
+        last_error = None
+        for attempt in range(3):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.4,
+                )
+                response_text = response.choices[0].message.content
+                parsed = self._parse_json(response_text)
+                validated = self._validate_questions(parsed, question_type)
+                if validated:
+                    return validated
+            except Exception as e:  # noqa: BLE001 - we deliberately retry on any parse/API error
+                last_error = e
+                continue
+
+        raise AIServiceError(
+            f"could not generate {difficulty} questions after 3 attempts: {last_error}"
+        )
 
     def generate_summary(self, topic, context_text=""):
         """Short 2-3 line plain-English explanation of a weak topic."""

@@ -63,8 +63,8 @@ def create_app():
     app.config.from_object(Config)
 
     if not os.environ.get("VERCEL"):
+        os.makedirs(os.path.join(os.path.dirname(__file__), "instance"), exist_ok=True)
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
-    os.makedirs(os.path.join(os.path.dirname(__file__), "instance"), exist_ok=True)
 
     db.init_app(app)
 

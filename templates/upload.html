@@ -42,7 +42,9 @@
 
           <div class="mb-3">
             <label class="form-label fw-semibold">OR Upload File(s) — PDF, DOCX, PPTX, TXT, or image (JPG/PNG)</label>
-            <input type="file" name="files" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png" multiple>
+            <input type="file" name="files" class="form-control"
+                   accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,image/jpeg,image/png"
+                   multiple>
           </div>
 
           <button type="submit" class="btn btn-primary btn-lg w-100" id="generateBtn">

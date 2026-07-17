@@ -6,10 +6,18 @@ FROM python:3.12-slim
 #   Render's native Python buildpack, which can't install arbitrary system
 #   packages — with this Dockerfile, image upload/OCR actually works here,
 #   which it never could on Vercel's serverless runtime.
+# - libreoffice-writer / libreoffice-impress: used to convert legacy binary
+#   .doc/.ppt files (pre-2007 Office formats) to modern .docx/.pptx before
+#   extracting text. Tested against a dedicated legacy-format extractor
+#   (catdoc/catppt) first — it silently returned empty output on a genuine
+#   .ppt file, so LibreOffice conversion is used instead despite the larger
+#   image size, since it actually works reliably.
 # - libgl1 / libglib2.0-0: runtime libraries opencv-python-headless needs
 #   even in "headless" mode on some minimal base images.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
+    libreoffice-writer \
+    libreoffice-impress \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
@@ -28,7 +36,9 @@ RUN mkdir -p uploads instance
 
 ENV PYTHONUNBUFFERED=1
 
-# Render sets $PORT at runtime and expects the app to bind to it — shell
-# form (not exec/JSON-array form) is required here so $PORT actually gets
-# expanded by the shell instead of being passed through literally.
-CMD gunicorn --bind 0.0.0.0:${PORT:-10000} --workers 2 --threads 4 --timeout 120 app:app
+# Render sets $PORT at runtime and expects the app to bind to it. Hugging
+# Face Spaces does NOT set $PORT and instead expects the app on port 7860 by
+# default — the ${PORT:-7860} fallback below makes this one Dockerfile work
+# on both platforms without changes. Shell form (not exec/JSON-array form)
+# is required so the variable actually gets expanded by the shell.
+CMD gunicorn --bind 0.0.0.0:${PORT:-7860} --workers 2 --threads 4 --timeout 120 app:app

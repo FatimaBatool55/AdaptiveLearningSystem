@@ -1,4 +1,5 @@
 import os
+import time
 from flask import (
     Blueprint, render_template, request, redirect, url_for,
     jsonify, send_file, current_app, flash
@@ -80,6 +81,7 @@ def upload():
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     os.makedirs(upload_folder, exist_ok=True)
 
+    extraction_start = time.monotonic()
     for file in files:
         if not file or file.filename == "":
             continue
@@ -87,15 +89,31 @@ def upload():
             flash(f"Skipped unsupported file type: {file.filename}")
             continue
 
+        ext = file.filename.rsplit(".", 1)[-1].lower()
+        if current_app.config.get("IS_VERCEL") and ext in ("jpg", "jpeg", "png"):
+            flash(
+                f"Skipped {file.filename}: image text extraction (OCR) isn't available "
+                "on this hosting platform. Please use a PDF, DOCX, PPTX, or TXT file instead."
+            )
+            continue
+
         filename = secure_filename(file.filename)
         filepath = os.path.join(upload_folder, filename)
         file.save(filepath)
 
+        file_start = time.monotonic()
         try:
             merged_text += extract_text(filepath) + "\n\n"
         except Exception as e:
             flash(f"Could not read {filename}: {e}")
             continue
+        finally:
+            current_app.logger.info(
+                f"[timing] Extracted {filename} in {time.monotonic() - file_start:.1f}s"
+            )
+    current_app.logger.info(
+        f"[timing] All file extraction took {time.monotonic() - extraction_start:.1f}s total"
+    )
 
     if not merged_text.strip() or len(merged_text.strip()) < 20:
         flash("No readable study material found. Paste some notes or upload a valid file.")
@@ -110,6 +128,7 @@ def upload():
     db.session.add(session_obj)
     db.session.commit()
 
+    ai_start = time.monotonic()
     try:
         ai = AIService()
         generated = ai.generate_questions(
@@ -119,10 +138,18 @@ def upload():
             requested_questions=question_count,
         )
     except AIServiceError as e:
+        current_app.logger.info(
+            f"[timing] AI generation FAILED after {time.monotonic() - ai_start:.1f}s: {e}"
+        )
         flash(f"Failed to generate questions: {e}")
         db.session.delete(session_obj)
         db.session.commit()
         return redirect(url_for("main.upload"))
+
+    current_app.logger.info(
+        f"[timing] AI question generation took {time.monotonic() - ai_start:.1f}s "
+        f"for {len(generated)} questions"
+    )
 
     _save_questions(session_obj.id, generated, question_type)
 
@@ -130,14 +157,6 @@ def upload():
 
     return redirect(url_for("main.quiz", session_id=session_obj.id))
 
-@main_bp.app_errorhandler(413)
-def payload_too_large(error):
-    limit_mb = current_app.config.get("MAX_CONTENT_LENGTH", 0) // (1024 * 1024)
-    flash(
-        f"That upload was too large. This deployment accepts files up to about {limit_mb}MB — "
-        "try a smaller file, or paste the text directly into the notes box instead."
-    )
-    return redirect(url_for("main.upload"))
 
 # ---------------------------------------------------------------------
 # QUIZ — single page, AJAX only (no reload per question)
@@ -351,6 +370,16 @@ def health():
 @main_bp.app_errorhandler(404)
 def not_found(error):
     return render_template("base.html"), 404
+
+
+@main_bp.app_errorhandler(413)
+def payload_too_large(error):
+    limit_mb = current_app.config.get("UPLOAD_LIMIT_MB", 0)
+    flash(
+        f"That upload was too large. This deployment accepts files up to about {limit_mb}MB — "
+        "try a smaller file, or paste the text directly into the notes box instead."
+    )
+    return redirect(url_for("main.upload"))
 
 
 @main_bp.app_errorhandler(500)
