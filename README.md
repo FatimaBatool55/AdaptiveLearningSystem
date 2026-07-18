@@ -188,25 +188,6 @@ Visit `http://localhost:5000`. On first run, `app.py` automatically:
 2. Adds any missing columns to tables that already existed, if the schema has changed since they were created (a lightweight auto-migration safety net — see the comments in `app.py` for why this exists instead of a full migrations framework)
 
 If `DATABASE_URL` isn't set, the app falls back to a local SQLite file at `instance/quiz.db` so it still boots for quick testing.
-
----
-
-## Deploying to Vercel
-
-1. Push this repository to GitHub (see [Security Notes](#security-notes) below — make sure `.env` is **not** included)
-2. Go to [vercel.com](https://vercel.com) -> **Add New -> Project** -> import your GitHub repo
-3. Vercel auto-detects the Flask app via `requirements.txt` and `app.py`
-4. **Before deploying**, add these three Environment Variables in the Vercel project settings (this keeps secrets out of your code entirely):
-   - `SECRET_KEY`
-   - `DATABASE_URL`
-   - `GROQ_API_KEY`
-5. Click **Deploy**
-
-Notes specific to serverless deployment:
-- Vercel's filesystem is read-only except `/tmp`; `config.py` already detects the `VERCEL` environment variable Vercel sets automatically and redirects `UPLOAD_FOLDER` to `/tmp/uploads` in that case
-- Uploaded files and generated PDFs do **not** persist between requests on Vercel (ephemeral `/tmp`) — this is fine, since the PDF report is generated and served in the same request, and all real data (questions, attempts, questionnaire responses) lives in Supabase Postgres, not on disk
-- Image OCR (`pytesseract`) requires the system `tesseract-ocr` binary, which isn't available on Vercel's serverless runtime — PDF/DOCX/PPTX/TXT upload and all AI/database features work normally, but image upload OCR will not work on Vercel specifically
-
 ---
 
 ## API Routes
@@ -255,7 +236,3 @@ Notes specific to serverless deployment:
 - Image OCR requires the `tesseract-ocr` system package locally, and does not work on Vercel's serverless runtime
 
 ---
-
-## License
-
-This project was built as an academic/research project. Add your preferred license here (MIT is a common permissive choice for student projects).
