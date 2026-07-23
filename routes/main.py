@@ -374,10 +374,9 @@ def not_found(error):
 
 @main_bp.app_errorhandler(413)
 def payload_too_large(error):
-    limit_mb = current_app.config.get("UPLOAD_LIMIT_MB", 0)
     flash(
-        f"That upload was too large. This deployment accepts files up to about {limit_mb}MB — "
-        "try a smaller file, or paste the text directly into the notes box instead."
+        "That upload was too large for this deployment platform to accept. "
+        "Try a smaller file, or paste the text directly into the notes box instead."
     )
     return redirect(url_for("main.upload"))
 
