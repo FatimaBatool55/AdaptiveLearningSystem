@@ -16,8 +16,8 @@ class AIService:
             raise AIServiceError(
                 "GROQ_API_KEY is not set. Add it to your .env file (see .env.example)."
             )
-        self.client = Groq(api_key=api_key)
-        self.model = current_app.config.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+        self.client = Groq(api_key=api_key, timeout=25.0, max_retries=0)
+        self.model = current_app.config.get("GROQ_MODEL", "openai/gpt-oss-20b")
 
     # ------------------------------------------------------------------
     # Public API
@@ -68,7 +68,7 @@ class AIService:
         return all_questions
 
     def _generate_bucket(self, text, education_level, question_type, count, difficulty, topics_filter):
-        """Generate one difficulty bucket, with up to 3 retries. Raises
+        """Generate one difficulty bucket, with up to 2 retries. Raises
         AIServiceError if all attempts fail for this bucket."""
         prompt = self._build_prompt(
             text=text,
@@ -80,12 +80,13 @@ class AIService:
         )
 
         last_error = None
-        for attempt in range(3):
+        for attempt in range(2):
             try:
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.4,
+                    max_tokens=min(4000, count * 350),
                 )
                 response_text = response.choices[0].message.content
                 parsed = self._parse_json(response_text)
@@ -97,7 +98,7 @@ class AIService:
                 continue
 
         raise AIServiceError(
-            f"could not generate {difficulty} questions after 3 attempts: {last_error}"
+            f"could not generate {difficulty} questions after 2 attempts: {last_error}"
         )
 
     def generate_summary(self, topic, context_text=""):
