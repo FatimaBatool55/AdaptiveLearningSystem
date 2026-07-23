@@ -43,21 +43,12 @@ class Config:
         UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 
     # Vercel Hobby/Pro serverless functions hard-reject any request body over
-    # ~4.5MB with a 413 PAYLOAD_TOO_LARGE *before our code ever runs* — no
-    # amount of Flask config can raise that ceiling there. Other hosts (Render,
-    # Snap, etc.) have no such platform-level limit, so give them a much more
-    # generous default and only shrink it specifically when running on Vercel.
-    #
-    # UPLOAD_LIMIT_MB is the number we advertise to the user (e.g. in the
-    # "file too large" flash message). The actual Flask MAX_CONTENT_LENGTH is
-    # set a few MB higher than that, because the raw file isn't the only thing
-    # in the request body — multipart/form-data encoding adds boundary
-    # strings and headers, and the other form fields (education level,
-    # question type, notes text, etc.) count too. Without this headroom, a
-    # file that's *exactly* at the advertised limit gets rejected even though
-    # it technically fits the promise made to the user.
-    UPLOAD_LIMIT_MB = 4 if IS_VERCEL else 50
-    MAX_CONTENT_LENGTH = (UPLOAD_LIMIT_MB + 5) * 1024 * 1024
+    # ~4.5MB with a 413 PAYLOAD_TOO_LARGE at the platform/proxy level, before
+    # our code ever runs — no Flask config can raise that ceiling there. On
+    # every other host (Northflank, Render, Snap, etc.) there's no such
+    # platform limit, so file size is left uncapped entirely (None disables
+    # Flask's own MAX_CONTENT_LENGTH check).
+    MAX_CONTENT_LENGTH = (4 * 1024 * 1024) if IS_VERCEL else None
 
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-    GROQ_MODEL = "llama-3.3-70b-versatile"
+    GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
