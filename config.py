@@ -7,12 +7,6 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def _normalize_db_url(url: str) -> str:
-    """Supabase/Heroku-style URLs sometimes start with postgres:// or plain
-    postgresql://, both of which make SQLAlchemy default to the psycopg2
-    driver. This project installs psycopg (v3) instead — because it has
-    reliable prebuilt wheels on Windows, whereas psycopg2-binary can fail
-    to build from source on newer Python versions. Force the +psycopg
-    driver explicitly so SQLAlchemy doesn't try to import psycopg2."""
     if not url:
         return url
     if url.startswith("postgres://"):
@@ -27,28 +21,21 @@ class Config:
 
     _db_url = os.environ.get("DATABASE_URL")
     if not _db_url:
-        # Safe local fallback so the app still boots without Supabase configured
         _db_url = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'quiz.db')}"
     SQLALCHEMY_DATABASE_URI = _normalize_db_url(_db_url)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
-    # Vercel's filesystem is read-only everywhere except /tmp. Detect that
-    # environment (Vercel sets VERCEL=1) and write uploads/reports there
-    # instead of a local uploads/ folder, which would fail to write on Vercel.
     IS_VERCEL = bool(os.environ.get("VERCEL"))
     if IS_VERCEL:
         UPLOAD_FOLDER = "/tmp/uploads"
     else:
         UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 
-    # Vercel Hobby/Pro serverless functions hard-reject any request body over
-    # ~4.5MB with a 413 PAYLOAD_TOO_LARGE at the platform/proxy level, before
-    # our code ever runs — no Flask config can raise that ceiling there. On
-    # every other host (Northflank, Render, Snap, etc.) there's no such
-    # platform limit, so file size is left uncapped entirely (None disables
-    # Flask's own MAX_CONTENT_LENGTH check).
-    MAX_CONTENT_LENGTH = (4 * 1024 * 1024) if IS_VERCEL else None
+    # PDF up to 50MB; small buffer added for multipart overhead so an exact
+    # 50MB file isn't rejected.
+    UPLOAD_LIMIT_MB = 4 if IS_VERCEL else 50
+    MAX_CONTENT_LENGTH = (UPLOAD_LIMIT_MB + 5) * 1024 * 1024
 
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-    GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
+    GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
