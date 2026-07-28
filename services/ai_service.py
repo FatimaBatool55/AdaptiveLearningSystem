@@ -17,7 +17,7 @@ class AIService:
                 "GROQ_API_KEY is not set. Add it to your .env file (see .env.example)."
             )
         self.client = Groq(api_key=api_key, timeout=25.0, max_retries=0)
-        self.model = current_app.config.get("GROQ_MODEL", "openai/gpt-oss-20b")
+        self.model = current_app.config.get("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     # ------------------------------------------------------------------
     # Public API
