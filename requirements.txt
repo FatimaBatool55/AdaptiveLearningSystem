@@ -16,7 +16,6 @@ groq>=1.5.0
 # File extraction
 PyMuPDF>=1.25.1
 python-docx>=1.1.2
-python-pptx>=1.0.2
 
 # Optional image OCR support (needs system tesseract-ocr binary too)
 pytesseract>=0.3.13
