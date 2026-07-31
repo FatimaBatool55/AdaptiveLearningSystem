@@ -4,6 +4,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from groq import Groq
 from flask import current_app
 
+from services.rag_service import get_context_for_generation
+
 
 class AIServiceError(Exception):
     pass
@@ -30,11 +32,21 @@ class AIService:
         plain dicts (NOT saved to DB here — the caller decides how to persist
         them, e.g. tagging weak-practice questions separately).
 
+        RAG note: instead of naively truncating the source text to the first
+        N characters (which, for a large PDF, could just be the intro and
+        miss most of the actual content), the full text is chunked and the
+        chunks most relevant to the topic (via TF-IDF similarity — see
+        rag_service.py) are retrieved and used as context. This means large
+        documents are handled gracefully and the generated questions draw
+        from the whole document, not just its opening section.
+
         The three difficulty buckets are independent Groq API calls, so they
         run concurrently (thread pool) instead of one after another — this
-        cuts total generation time roughly 3x since each call is
-        network-bound (waiting on Groq), not CPU-bound.
+        cuts total generation time since each call is network-bound
+        (waiting on Groq), not CPU-bound.
         """
+        context = get_context_for_generation(text, topics_filter=topics_filter)
+
         per_bucket = max(1, requested_questions // 3)
         buckets = {
             "easy": per_bucket,
@@ -49,7 +61,7 @@ class AIService:
         with ThreadPoolExecutor(max_workers=len(buckets)) as executor:
             futures = {
                 executor.submit(
-                    self._generate_bucket, text, education_level, question_type,
+                    self._generate_bucket, context, education_level, question_type,
                     count, difficulty, topics_filter
                 ): difficulty
                 for difficulty, count in buckets.items()
@@ -67,11 +79,11 @@ class AIService:
 
         return all_questions
 
-    def _generate_bucket(self, text, education_level, question_type, count, difficulty, topics_filter):
+    def _generate_bucket(self, context, education_level, question_type, count, difficulty, topics_filter):
         """Generate one difficulty bucket, with up to 2 retries. Raises
         AIServiceError if all attempts fail for this bucket."""
         prompt = self._build_prompt(
-            text=text,
+            text=context,
             education_level=education_level,
             question_type=question_type,
             total_questions=count,
@@ -108,7 +120,8 @@ class AIService:
             "No bullet points, no markdown, plain text only."
         )
         if context_text:
-            prompt += f"\n\nRelevant study material for context:\n\"\"\"{context_text[:3000]}\"\"\""
+            relevant = get_context_for_generation(context_text, topics_filter=[topic], max_chars=3000)
+            prompt += f"\n\nRelevant study material for context:\n\"\"\"{relevant}\"\"\""
 
         try:
             response = self.client.chat.completions.create(
@@ -146,8 +159,8 @@ class AIService:
         return f"""
 You are an expert educational assessment designer.
 
-STUDY MATERIAL:
-\"\"\"{text[:12000]}\"\"\"
+STUDY MATERIAL (most relevant excerpts):
+\"\"\"{text}\"\"\"
 
 Generate exactly {total_questions} questions for {education_level} level.
 Every question MUST have difficulty: "{difficulty}". Do NOT generate any other difficulty.
