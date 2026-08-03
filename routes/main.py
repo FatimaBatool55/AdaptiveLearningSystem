@@ -18,9 +18,7 @@ from services.report_service import build_pdf_report
 main_bp = Blueprint("main", __name__)
 
 
-# ---------------------------------------------------------------------
 # Helpers
-# ---------------------------------------------------------------------
 
 def question_json(q, reveal=False):
     return q.to_dict(include_answer=reveal)
@@ -46,19 +44,13 @@ def _save_questions(session_id, items, question_type, is_weak_practice=False):
         db.session.add(q)
     db.session.commit()
 
-
-# ---------------------------------------------------------------------
 # HOME
-# ---------------------------------------------------------------------
 
 @main_bp.route("/")
 def home():
     return render_template("home.html")
 
-
-# ---------------------------------------------------------------------
 # UPLOAD
-# ---------------------------------------------------------------------
 
 @main_bp.route("/upload", methods=["GET", "POST"])
 def upload():
@@ -158,9 +150,7 @@ def upload():
     return redirect(url_for("main.quiz", session_id=session_obj.id))
 
 
-# ---------------------------------------------------------------------
-# QUIZ — single page, AJAX only (no reload per question)
-# ---------------------------------------------------------------------
+# QUIZ 
 
 @main_bp.route("/quiz/<int:session_id>")
 def quiz(session_id):
@@ -186,10 +176,7 @@ def quiz(session_id):
     )
 
 
-# ---------------------------------------------------------------------
-# AJAX: submit answer (grades + updates adaptive state; does NOT advance
-# current_question — that happens exactly once, in /next)
-# ---------------------------------------------------------------------
+# AJAX: submit answer 
 
 @main_bp.route("/submit/<int:session_id>", methods=["POST"])
 def submit(session_id):
@@ -218,11 +205,7 @@ def submit(session_id):
     })
 
 
-# ---------------------------------------------------------------------
-# AJAX: advance to next question (the ONLY place current_question is
-# incremented — fixes the previous double-increment bug where both
-# /submit and /next bumped the counter)
-# ---------------------------------------------------------------------
+# AJAX advance to next question 
 
 @main_bp.route("/next/<int:session_id>", methods=["POST"])
 def next_question(session_id):
@@ -261,10 +244,8 @@ def next_question(session_id):
     })
 
 
-# ---------------------------------------------------------------------
-# RETAKE — reset the SAME quiz state (not delete/recreate, which lost the
-# session's total_questions/mode context in the previous version)
-# ---------------------------------------------------------------------
+
+# RETAKE reset the SAME quiz state
 
 @main_bp.route("/retake/<int:session_id>", methods=["POST"])
 def retake(session_id):
@@ -274,9 +255,7 @@ def retake(session_id):
     return jsonify({"status": "ok", "redirect": url_for("main.quiz", session_id=session_id)})
 
 
-# ---------------------------------------------------------------------
-# PRACTICE WEAK AREAS — generates NEW AI questions only on weak topics
-# ---------------------------------------------------------------------
+# PRACTICE WEAK AREAS 
 
 @main_bp.route("/weak/<int:session_id>", methods=["POST"])
 def weak_practice(session_id):
@@ -305,10 +284,7 @@ def weak_practice(session_id):
 
     return jsonify({"status": "ok", "redirect": url_for("main.quiz", session_id=session_id)})
 
-
-# ---------------------------------------------------------------------
-# DOWNLOAD PDF REPORT — previously just returned "PDF Report Coming Soon"
-# ---------------------------------------------------------------------
+# DOWNLOAD PDF REPORT 
 
 @main_bp.route("/download/<int:session_id>")
 def download_report(session_id):
@@ -326,9 +302,7 @@ def download_report(session_id):
     return send_file(filepath, as_attachment=True, download_name=f"quiz_report_{session_id}.pdf")
 
 
-# ---------------------------------------------------------------------
-# QUESTIONNAIRE — fixed to match the (now-corrected) Questionnaire model
-# ---------------------------------------------------------------------
+# QUESTIONNAIRE
 
 @main_bp.route("/questionnaire/<int:session_id>", methods=["POST"])
 def questionnaire(session_id):
@@ -358,9 +332,7 @@ def questionnaire(session_id):
     return jsonify({"status": "ok", "message": "Thank you for your feedback!"})
 
 
-# ---------------------------------------------------------------------
 # MISC
-# ---------------------------------------------------------------------
 
 @main_bp.route("/health")
 def health():
