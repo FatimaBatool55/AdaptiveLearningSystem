@@ -32,8 +32,7 @@ class Config:
     else:
         UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 
-    # PDF up to 50MB; small buffer added for multipart overhead so an exact
-    # 50MB file isn't rejected.
+    # PDF up to 50MB small buffer added for multipart overhead
     UPLOAD_LIMIT_MB = 4 if IS_VERCEL else 50
     MAX_CONTENT_LENGTH = (UPLOAD_LIMIT_MB + 5) * 1024 * 1024
 
