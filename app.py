@@ -29,7 +29,7 @@ def _auto_add_missing_columns(app):
         model = mapper.class_
         table = model.__table__
         if table.name not in existing_tables:
-            continue  # brand new table — create_all() already handled it
+            continue  
 
         existing_columns = {col["name"] for col in inspector.get_columns(table.name)}
 
