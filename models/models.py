@@ -44,9 +44,8 @@ class Question(db.Model):
     source_quote = db.Column(db.Text)
     is_weak_practice = db.Column(db.Boolean, default=False)
 
-    # Elo rating for adaptive difficulty selection. Seeded from the AI's
-    # difficulty label, then recalibrated after every attempt based on how
-    # students actually perform on it (see AdaptiveService.update_elo).
+    # Elo rating 
+    
     elo_rating = db.Column(db.Float, default=1300.0)
     times_answered = db.Column(db.Integer, default=0)
     times_correct = db.Column(db.Integer, default=0)
@@ -79,9 +78,8 @@ class QuizState(db.Model):
     correct_answers = db.Column(db.Integer, default=0)
     wrong_answers = db.Column(db.Integer, default=0)
 
-    # MutableList/MutableDict make SQLAlchemy detect in-place .append()/[key]=
-    # mutations on JSON columns and persist them — the previous version used
-    # plain JSON columns which silently dropped in-place mutations.
+    # MutableList
+    
     used_questions = db.Column(MutableList.as_mutable(db.JSON), default=list)
     weak_topics = db.Column(MutableDict.as_mutable(db.JSON), default=dict)
 
@@ -91,10 +89,8 @@ class QuizState(db.Model):
     mode = db.Column(db.String(20), default="normal")  # normal / weak_practice
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Elo-based adaptive difficulty: student's overall ability rating plus
-    # a per-topic breakdown, both updated after every answer. Using per-topic
-    # ratings (not just one global number) is what lets the system say
-    # "strong in Topic A, weak in Topic B" instead of one blended difficulty.
+    # Elo-based adaptive difficulty
+    
     student_elo = db.Column(db.Float, default=1300.0)
     topic_elo = db.Column(MutableDict.as_mutable(db.JSON), default=dict)
 
@@ -117,7 +113,7 @@ class Questionnaire(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey("learning_sessions.id"), nullable=False)
 
-    # Each stores one of: "Strongly Agree", "Agree", "Neutral", "Disagree", "Strongly Disagree"
+    
     q1_understanding = db.Column(db.String(30))         # improved understanding of study material
     q2_adaptive_difficulty = db.Column(db.String(30))   # difficulty matched learning level
     q3_feedback = db.Column(db.String(30))              # explanations/feedback helped identify mistakes
