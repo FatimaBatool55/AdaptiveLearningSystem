@@ -177,7 +177,7 @@ class AdaptiveService:
         on the Elo numbers."""
         topic = question.topic or "General"
 
-        # --- 1. The actual, user-visible adaptive step -------------------
+        
         if is_correct:
             state.correct_answers += 1
             state.current_difficulty = DIFFICULTY_UP[state.current_difficulty]
