@@ -21,9 +21,9 @@ class AIService:
         self.client = Groq(api_key=api_key, timeout=25.0, max_retries=0)
         self.model = current_app.config.get("GROQ_MODEL", "llama-3.3-70b-versatile")
 
-    # ------------------------------------------------------------------
+    
     # Public API
-    # ------------------------------------------------------------------
+   
 
     def generate_questions(self, text, education_level, question_type,
                             requested_questions, topics_filter=None):
@@ -133,9 +133,9 @@ class AIService:
         except Exception:
             return f"Review the topic '{topic}' again — it appeared in your incorrect answers."
 
-    # ------------------------------------------------------------------
+    
     # Internal helpers
-    # ------------------------------------------------------------------
+    
 
     def _build_prompt(self, text, education_level, question_type, total_questions,
                        difficulty, topics_filter=None):
