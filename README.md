@@ -4,6 +4,9 @@ An AI-powered adaptive quiz platform: upload study material (PDF, DOCX, PPTX, TX
 
 Built with Flask, Supabase (Postgres), and the Groq API (Llama 3.3 70B).
 
+🔗 **Live Demo:** [http://13.62.177.170](http://13.62.177.170)
+*(Note: the AWS domain `ai-quiz.eu-north-1.elasticbeanstalk.com` may fail to resolve on some ISPs/DNS resolvers — use the direct IP link above if the domain doesn't load.)*
+
 ---
 
 ## Table of Contents
@@ -16,7 +19,7 @@ Built with Flask, Supabase (Postgres), and the Groq API (Llama 3.3 70B).
 - [Setup & Installation](#setup--installation)
 - [Environment Variables](#environment-variables)
 - [Running Locally](#running-locally)
-- [Deploying to Vercel](#deploying-to-vercel)
+- [Deploying to AWS Elastic Beanstalk](#deploying-to-aws-elastic-beanstalk)
 - [API Routes](#api-routes)
 - [Database Schema](#database-schema)
 - [Security Notes](#security-notes)
@@ -49,7 +52,7 @@ Built with Flask, Supabase (Postgres), and the Groq API (Llama 3.3 70B).
 | File extraction | PyMuPDF (PDF), python-docx (DOCX), python-pptx (PPTX), pytesseract + OpenCV (image OCR) |
 | PDF report generation | fpdf2 |
 | Frontend | Server-rendered Jinja2 templates + vanilla JavaScript (Fetch API) + Bootstrap 5 |
-| Deployment | Vercel (serverless Python functions) |
+| Deployment | Docker container on AWS Elastic Beanstalk (single-instance, Amazon Linux 2023) |
 
 No frontend framework (no React/Vue) — the quiz page is one Jinja2 template with three cards (quiz, results, questionnaire) toggled by plain JavaScript.
 
@@ -68,6 +71,7 @@ A full activity-diagram breakdown of every feature — which function calls whic
 7. Questionnaire Submission
 8. PDF Report Download
 9. Frontend component visibility (which card is shown/hidden and why)
+10. Deployment flow (Docker build → Elastic Beanstalk → Nginx proxy → app)
 
 ---
 
@@ -77,7 +81,11 @@ A full activity-diagram breakdown of every feature — which function calls whic
 AIQuizSystem/
 ├── app.py                     # Flask app factory, DB init, auto-migration
 ├── config.py                  # Configuration (env vars, DB URL normalization)
-├── vercel.json                # Vercel deployment config
+├── Dockerfile                  # Container definition (used for AWS EB deployment)
+├── Procfile                     # Gunicorn start command
+├── .platform/
+│   └── nginx/conf.d/
+│       └── uploads.conf        # Raises Nginx upload limit (client_max_body_size) on EB
 ├── requirements.txt
 ├── .env.example                # Template — copy to .env and fill in real values
 ├── .gitignore
@@ -188,6 +196,21 @@ Visit `http://localhost:5000`. On first run, `app.py` automatically:
 2. Adds any missing columns to tables that already existed, if the schema has changed since they were created (a lightweight auto-migration safety net — see the comments in `app.py` for why this exists instead of a full migrations framework)
 
 If `DATABASE_URL` isn't set, the app falls back to a local SQLite file at `instance/quiz.db` so it still boots for quick testing.
+
+---
+
+## Deploying to AWS Elastic Beanstalk
+
+This project is deployed as a **single-container Docker application** on AWS Elastic Beanstalk.
+
+1. Package the project as a `.zip` (with Unix-style forward-slash paths — a zip created on Windows via "Send to → Compressed folder" uses backslash paths and will fail to extract on the Linux instance)
+2. Upload the `.zip` via the EB console (**Upload and deploy**) or the EB CLI (`eb deploy`)
+3. Set environment variables under **Configuration → Updates, monitoring, and logging → Environment properties** (`DATABASE_URL`, `GROQ_API_KEY`, `SECRET_KEY`) — or better, reference them from **AWS Systems Manager Parameter Store** (as `SecureString` values) instead of plain text
+4. The `Dockerfile` must include an `EXPOSE` directive matching the port Gunicorn binds to — EB's Docker platform needs this to know which port to forward traffic to
+5. `.platform/nginx/conf.d/uploads.conf` raises Nginx's default 1MB upload limit (`client_max_body_size`) so larger PDF/DOCX uploads aren't rejected before reaching the app
+
+**Instance sizing:** the app's dependencies (OpenCV, scikit-learn, PyMuPDF) are memory-heavy. A `t3.micro` (1GB RAM) can struggle under concurrent load; `t3.small` (2GB RAM) is recommended even for light traffic.
+
 ---
 
 ## API Routes
@@ -222,8 +245,8 @@ If `DATABASE_URL` isn't set, the app falls back to a local SQLite file at `insta
 ## Security Notes
 
 - `.env` is gitignored — real credentials should never be committed
-- If credentials are ever exposed (e.g. pasted into a chat, committed by mistake), **rotate them** rather than relying solely on removing them from the repo — Git history retains old commits unless explicitly rewritten (e.g. with the BFG Repo-Cleaner)
-- In production, set all secrets via your hosting platform's environment variable settings (e.g. Vercel's dashboard), never hardcoded in source
+- If credentials are ever exposed (e.g. pasted into a chat, committed by mistake, or shown in an AWS console screenshot), **rotate them immediately** rather than relying solely on removing them from the repo — Git history retains old commits unless explicitly rewritten (e.g. with the BFG Repo-Cleaner)
+- In production, set all secrets via your hosting platform's environment variable settings, ideally backed by **AWS Systems Manager Parameter Store** (SecureString) or **Secrets Manager** rather than plain text environment properties
 - Recommend keeping the GitHub repository **private** given it's a student/research project with a live database connection
 
 ---
@@ -233,6 +256,5 @@ If `DATABASE_URL` isn't set, the app falls back to a local SQLite file at `insta
 - The Elo-based mastery metric is a reporting/research layer, not a peer-reviewed psychometric model — treat the PDF report's "Topic Mastery" percentages as an approximate signal, not a validated measurement
 - AI-generated topic names aren't normalized — the same underlying topic can occasionally be labeled slightly differently across questions (e.g. "Artificial Intelligence" vs. "Machine Perception"), which can fragment weak-topic tracking
 - No authentication/user accounts — anyone with a session URL can access that session's quiz
-- Image OCR requires the `tesseract-ocr` system package locally, and does not work on Vercel's serverless runtime
-
----
+- Image OCR requires the `tesseract-ocr` system package, bundled into the Docker image for deployment
+- Single-instance deployment (no auto-scaling/load balancer redundancy) — sufficient for light traffic (a handful of concurrent users) but not resilient to instance failure
