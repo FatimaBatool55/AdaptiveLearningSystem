@@ -29,16 +29,9 @@ def allowed_file(filename):
 def get_extension(filename):
     return filename.rsplit(".", 1)[1].lower()
 
-
-# ---------------------------------------------------------------------
 # Legacy .doc conversion (.doc -> .docx via LibreOffice)
-# ---------------------------------------------------------------------
 
-# Common install locations, checked if plain "soffice" isn't found on PATH.
-# Windows installers (including winget) frequently update PATH in a way that
-# already-running processes never pick up. Searching these known paths
-# directly sidesteps that. Set LIBREOFFICE_PATH to override with a custom
-# location.
+
 _LIBREOFFICE_CANDIDATES = [
     os.environ.get("LIBREOFFICE_PATH"),
     "soffice",  # PATH lookup (works on Linux/Docker, and Windows if PATH is fresh)
@@ -102,9 +95,8 @@ def _convert_doc_to_docx(path):
     return converted_path
 
 
-# ---------------------------------------------------------------------
 # PDF
-# ---------------------------------------------------------------------
+
 def extract_pdf(path):
     import fitz  # PyMuPDF
     text = ""
@@ -117,26 +109,23 @@ def extract_pdf(path):
     return text.strip()
 
 
-# ---------------------------------------------------------------------
 # DOCX
-# ---------------------------------------------------------------------
+
 def extract_docx(path):
     from docx import Document
     document = Document(path)
     return "\n".join(p.text for p in document.paragraphs).strip()
 
 
-# ---------------------------------------------------------------------
 # TXT
-# ---------------------------------------------------------------------
+
 def extract_txt(path):
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read().strip()
 
 
-# ---------------------------------------------------------------------
-# Image OCR (optional — requires pytesseract + the tesseract-ocr binary)
-# ---------------------------------------------------------------------
+# Image OCR
+
 def is_blurry(path, threshold=100.0):
     try:
         import cv2
@@ -175,9 +164,8 @@ def extract_image_text(path):
     return text.strip()
 
 
-# ---------------------------------------------------------------------
 # Universal extraction dispatcher
-# ---------------------------------------------------------------------
+
 def extract_text(path):
     extension = get_extension(path)
 
