@@ -1,19 +1,4 @@
-/* ============================================================
-   Color palette
-   ------------------------------------------------------------
-   Ink       #1E2333  primary text / headings
-   Slate     #5B6472  secondary text
-   Indigo    #4F5FE0  primary actions / accents
-   Indigo-D  #3C4ACC  primary hover
-   Mint      #1F9D74  success / correct
-   Mint-Bg   #E4F6EE  success background
-   Coral     #E0554F  error / wrong
-   Coral-Bg  #FBE7E6  error background
-   Amber     #D89A2E  warning / medium difficulty
-   Cloud     #F4F6FB  page background
-   Paper     #FFFFFF  card background
-   Line      #E4E8F0  borders
-   ============================================================ */
+
 
 :root {
   --ink: #1E2333;
@@ -42,7 +27,7 @@ body {
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* -------------------- Navbar -------------------- */
+
 .navbar {
   background-color: var(--ink) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
@@ -54,7 +39,7 @@ body {
   color: #FFFFFF !important;
 }
 
-/* -------------------- Cards -------------------- */
+
 .card {
   border-radius: var(--radius);
   border: 1px solid var(--line);
@@ -84,7 +69,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--slate) !important;
 }
 
-/* -------------------- Buttons -------------------- */
+
 .btn-primary {
   background-color: var(--indigo);
   border-color: var(--indigo);
@@ -132,7 +117,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #FFFFFF;
 }
 
-/* -------------------- Quiz question options -------------------- */
+
 .option-btn {
   text-align: left;
   padding: 14px 18px;
@@ -167,7 +152,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
-/* -------------------- Feedback -------------------- */
+
 #feedbackAlert.alert-success {
   background-color: var(--mint-bg);
   color: #0E5C40;
@@ -195,7 +180,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--indigo) !important;
 }
 
-/* -------------------- Weak topics list -------------------- */
+
 .list-group-item {
   display: flex;
   justify-content: space-between;
@@ -206,9 +191,7 @@ h1, h2, h3, h4, h5, h6 {
   background-color: var(--coral) !important;
 }
 
-/* ============================================================
-   Questionnaire — Likert scale table
-   ============================================================ */
+
 .questionnaire-instructions {
   background-color: var(--cloud);
   border: 1px solid var(--line);
