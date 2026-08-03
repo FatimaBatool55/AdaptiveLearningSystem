@@ -4,8 +4,11 @@ An AI-powered adaptive quiz platform: upload study material (PDF, DOCX, PPTX, TX
 
 Built with Flask, Supabase (Postgres), and the Groq API (Llama 3.3 70B).
 
-🔗 **Live Demo:** [http://13.62.177.170](http://13.62.177.170)
-*(Note: the AWS domain `ai-quiz.eu-north-1.elasticbeanstalk.com` may fail to resolve on some ISPs/DNS resolvers — use the direct IP link above if the domain doesn't load.)*
+**AWS domain**: ai-quiz.eu-north-1.elasticbeanstalk.com
+
+**Live Demo:** [http://13.62.177.170](http://13.62.177.170)
+
+*(Note: the AWS domain may fail to resolve on some ISPs/DNS resolvers so use the direct IP link above if the domain doesn't load.)*
 
 ---
 
