@@ -38,8 +38,7 @@ DIFFICULTY_ORDER = ["easy", "medium", "hard"]
 DIFFICULTY_UP = {"easy": "medium", "medium": "hard", "hard": "hard"}
 DIFFICULTY_DOWN = {"hard": "medium", "medium": "easy", "easy": "easy"}
 
-# Seed ratings for each AI-assigned difficulty label (chess-style scale) —
-# internal research metric only, see module docstring.
+
 SEED_ELO = {"easy": 1000.0, "medium": 1300.0, "hard": 1600.0}
 K_STUDENT = 40.0
 K_QUESTION = 15.0
@@ -47,9 +46,7 @@ K_QUESTION = 15.0
 
 class AdaptiveService:
 
-    # ------------------------------------------------------------------
-    # State lifecycle
-    # ------------------------------------------------------------------
+
     @staticmethod
     def create_state(session_id, total_questions=10, mode="normal"):
         state = QuizState.query.filter_by(session_id=session_id).first()
@@ -91,11 +88,9 @@ class AdaptiveService:
         db.session.commit()
         return state
 
-    # ------------------------------------------------------------------
-    # Question selection: never repeat, prefer same topic, then match the
-    # CURRENT DIFFICULTY LABEL exactly (the thing the student actually saw
-    # change). Falls back to the closest label if no exact match exists.
-    # ------------------------------------------------------------------
+
+    # Question selection 
+    
     @staticmethod
     def pick_next_question(session_id, state):
         used_ids = set(state.used_questions or [])
@@ -134,9 +129,9 @@ class AdaptiveService:
         weak[topic] = weak.get(topic, 0) + 1
         state.weak_topics = weak
 
-    # ------------------------------------------------------------------
-    # Elo helpers (internal research metric only — see module docstring)
-    # ------------------------------------------------------------------
+   
+    # Elo helpers 
+  
     @staticmethod
     def _topic_elo(state, topic):
         topic_ratings = state.topic_elo or {}
@@ -173,9 +168,7 @@ class AdaptiveService:
         question.times_answered = (question.times_answered or 0) + 1
         question.times_correct = (question.times_correct or 0) + (1 if is_correct else 0)
 
-    # ------------------------------------------------------------------
-    # Core adaptive update — call once per graded answer.
-    # ------------------------------------------------------------------
+
     @staticmethod
     def apply_answer(state, question, is_correct):
         """Update counters, weak topics, the visible easy/medium/hard label,
@@ -193,10 +186,10 @@ class AdaptiveService:
             AdaptiveService.record_weak_topic(state, topic)
             state.current_difficulty = DIFFICULTY_DOWN[state.current_difficulty]
 
-        # --- 2. Internal research metric (not shown to the user) --------
+
         AdaptiveService._update_elo(state, question, is_correct)
 
-    # ------------------------------------------------------------------
+
     @staticmethod
     def get_accuracy(state):
         total = state.correct_answers + state.wrong_answers
